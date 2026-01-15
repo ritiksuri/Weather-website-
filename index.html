@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather App</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="overlay"></div>
+<div class="glow" id="glow"></div>
+
+<!-- CLOUDS -->
+<div class="cloud"></div>
+<div class="cloud"></div>
+<div class="cloud"></div>
+
+<!-- RAIN -->
+<div class="rain" id="rain"></div>
+
+<!-- STARS -->
+<div id="stars"></div>
+
+<div class="app">
+    <h2>Weather</h2>
+    <div class="city" id="cityName">Detecting location...</div>
+
+    <div class="search">
+        <input id="cityInput" placeholder="Enter city">
+        <button onclick="getByCity()">Search</button>
+    </div>
+
+    <button class="loc-btn" onclick="getByLocation()">📍 Use My Location</button>
+
+    <div class="main">
+        <img id="icon">
+        <div class="temp" id="temp">--°C</div>
+        <div class="desc" id="desc">---</div>
+    </div>
+
+    <div class="grid">
+        <div class="box">Feels <span id="feels">--°C</span></div>
+        <div class="box">Humidity <span id="humidity">--%</span></div>
+        <div class="box">Wind <span id="wind">-- km/h</span></div>
+        <div class="box">Pressure <span id="pressure">-- hPa</span></div>
+        <div class="box">Sunrise <span id="sunrise">--</span></div>
+        <div class="box">Sunset <span id="sunset">--</span></div>
+    </div>
+
+    <div class="error" id="error"></div>
+</div>
+
+<script>
+const API_KEY="5693e5814fed7999857292e74a98973c";
+
+/* UTIL */
+const time=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+/* BACKGROUND EFFECTS */
+function applyEffects(weather,icon){
+    const isNight=icon.includes("n");
+    rain.innerHTML="";
+    stars.innerHTML="";
+    glow.style.opacity=0;
+
+    if(weather.includes("Rain")){
+        for(let i=0;i<120;i++)
+            rain.innerHTML+=`<div class="drop" style="left:${Math.random()*100}vw;animation-delay:${Math.random()}s"></div>`;
+    }
+
+    if(isNight){
+        for(let i=0;i<80;i++)
+            stars.innerHTML+=`<div class="star" style="top:${Math.random()*50}vh;left:${Math.random()*100}vw"></div>`;
+    }
+
+    if(weather.includes("Clear")){
+        glow.style.opacity=.6;
+    }
+}
+
+/* FETCH */
+async function fetchWeather(url){
+    const r=await fetch(url);
+    const d=await r.json();
+    if(d.cod!==200){error.innerText=d.message;return;}
+
+    cityName.innerText=`${d.name}, ${d.sys.country}`;
+    temp.innerText=Math.round(d.main.temp)+"°C";
+    feels.innerText=d.main.feels_like+"°C";
+    humidity.innerText=d.main.humidity+"%";
+    wind.innerText=Math.round(d.wind.speed*3.6)+" km/h";
+    pressure.innerText=d.main.pressure;
+    desc.innerText=d.weather[0].description;
+    icon.src=`https://openweathermap.org/img/wn/${d.weather[0].icon}@2x.png`;
+    sunrise.innerText=time(d.sys.sunrise);
+    sunset.innerText=time(d.sys.sunset);
+
+    applyEffects(d.weather[0].main,d.weather[0].icon);
+}
+
+/* SEARCH */
+function getByCity(){
+    if(!cityInput.value) return;
+    fetchWeather(`https://api.openweathermap.org/data/2.5/weather?q=${cityInput.value}&units=metric&appid=${API_KEY}`);
+}
+
+/* GPS */
+function getByLocation(){
+    navigator.geolocation.getCurrentPosition(p=>{
+        fetchWeather(`https://api.openweathermap.org/data/2.5/weather?lat=${p.coords.latitude}&lon=${p.coords.longitude}&units=metric&appid=${API_KEY}`);
+    });
+}
+
+getByLocation();
+</script>
+
+</body>
+</html>
